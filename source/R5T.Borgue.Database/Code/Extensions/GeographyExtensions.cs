@@ -34,7 +34,7 @@ namespace R5T.Borgue.Database
             var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326); // Recommended SRID, used by Google Maps.
 
             int numCoordinates = appType.Vertices.Count;
-            var coordinates = new Coordinate[numCoordinates];
+            var coordinates = new Coordinate[numCoordinates + 1];
             for (int iCoordinate = 0; iCoordinate < numCoordinates; iCoordinate++)
             {
                 var vertex = appType.Vertices[iCoordinate];
@@ -44,9 +44,14 @@ namespace R5T.Borgue.Database
                 coordinates[iCoordinate] = coordinate;
             }
 
+            // Make sure ring is closed (first point equals last point).
+            var firstVertex = appType.Vertices[0];
+
+            coordinates[numCoordinates] = new Coordinate(firstVertex.Lng, firstVertex.Lat);
+
             var linearRing = new LinearRing(coordinates);
 
-            var geometry = new Polygon(linearRing);
+            var geometry = new Polygon(linearRing, geometryFactory);
 
             var entity = new EntityType()
             {
