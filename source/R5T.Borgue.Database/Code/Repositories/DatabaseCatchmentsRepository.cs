@@ -13,51 +13,51 @@ using R5T.Venetia;
 
 namespace R5T.Borgue.Database
 {
-    public class DatabaseGeographyRepository : DatabaseRepositoryBase<GeographyDbContext>, IGeographyRepository
+    public class DatabaseCatchmentsRepository : DatabaseRepositoryBase<CatchmentsDbContext>, ICatchmentsRepository
     {
-        public DatabaseGeographyRepository(DbContextOptions<GeographyDbContext> dbContextOptions)
+        public DatabaseCatchmentsRepository(DbContextOptions<CatchmentsDbContext> dbContextOptions)
             : base(dbContextOptions)
         {
         }
 
-        public override GeographyDbContext GetNewDbContext()
+        public override CatchmentsDbContext GetNewDbContext()
         {
-            var dbContext = new GeographyDbContext(this.DbContextOptions);
+            var dbContext = new CatchmentsDbContext(this.DbContextOptions);
             return dbContext;
         }
 
-        public void Add(Geography geography)
+        public void Add(Catchment geography)
         {
             var geographyEntity = geography.ToEntityType();
 
             using (var dbContext = this.GetNewDbContext())
             {
-                dbContext.Geographies.Add(geographyEntity);
+                dbContext.Catchments.Add(geographyEntity);
 
                 dbContext.SaveChanges();
             }
         }
 
-        public void Delete(GeographyIdentity identity)
+        public void Delete(CatchmentIdentity identity)
         {
             throw new NotImplementedException();
         }
 
-        public bool Exists(GeographyIdentity identity)
+        public bool Exists(CatchmentIdentity identity)
         {
             throw new NotImplementedException();
         }
 
-        public Geography Get(GeographyIdentity identity)
+        public Catchment Get(CatchmentIdentity identity)
         {
             throw new NotImplementedException();
         }
 
-        public IEnumerable<Geography> GetAll()
+        public IEnumerable<Catchment> GetAll()
         {
             using (var dbContext = this.GetNewDbContext())
             {
-                var geographyEntities = dbContext.Geographies.ToList(); // Perform query now.
+                var geographyEntities = dbContext.Catchments.ToList(); // Perform query now.
                 foreach (var geographyEntity in geographyEntities)
                 {
                     var geography = geographyEntity.ToAppType();
@@ -67,7 +67,7 @@ namespace R5T.Borgue.Database
             }
         }
 
-        public IEnumerable<Geography> GetGeographiesContainingPoint(LngLat lngLat)
+        public IEnumerable<Catchment> GetAllContainingPoint(LngLat lngLat)
         {
             var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
@@ -76,7 +76,7 @@ namespace R5T.Borgue.Database
 
             using (var dbContext = this.GetNewDbContext())
             {
-                var geographies = dbContext.Geographies.Where(x => x.Border.Contains(point)).Select(x => x.ToAppType()).ToList();
+                var geographies = dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToList();
                 return geographies;
             }
         }

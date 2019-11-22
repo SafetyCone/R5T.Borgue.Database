@@ -6,13 +6,13 @@ using NetTopologySuite.Geometries;
 
 namespace R5T.Borgue.Database.Entities
 {
-    public class Geography
+    public class Catchment
     {
         public int ID { get; set; }
 
         public Guid Identity { get; set; }
 
         //[Column(TypeName = "geography")] // This is the default for MS SQL.
-        public Geometry Border { get; set; }
+        public Geometry Boundary { get; set; }
     }
 }

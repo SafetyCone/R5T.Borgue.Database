@@ -6,24 +6,24 @@ using NetTopologySuite.Geometries;
 
 using R5T.Corcyra;
 
-using AppType = R5T.Corcyra.Geography;
-using EntityType = R5T.Borgue.Database.Entities.Geography;
+using AppType = R5T.Corcyra.Catchment;
+using EntityType = R5T.Borgue.Database.Entities.Catchment;
 
 
 namespace R5T.Borgue.Database
 {
-    public static class GeographyExtensions
+    public static class CatchmentExtensions
     {
         public static AppType ToAppType(this EntityType entityType)
         {
             var appType = new AppType()
             {
-                Identity =  GeographyIdentity.From(entityType.Identity)
+                Identity =  CatchmentIdentity.From(entityType.Identity)
             };
 
-            foreach (var coordinate in entityType.Border.Coordinates)
+            foreach (var coordinate in entityType.Boundary.Coordinates)
             {
-                appType.Vertices.Add(new LngLat() { Lng = coordinate.X, Lat = coordinate.Y }); // Is this right? X = Longitude, Y = Latitude. This is recommended by: https://docs.microsoft.com/en-us/ef/core/modeling/spatial
+                appType.Boundary.Add(new LngLat() { Lng = coordinate.X, Lat = coordinate.Y }); // Is this right? X = Longitude, Y = Latitude. This is recommended by: https://docs.microsoft.com/en-us/ef/core/modeling/spatial
             }
 
             return appType;
@@ -33,11 +33,11 @@ namespace R5T.Borgue.Database
         {
             var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326); // Recommended SRID, used by Google Maps.
 
-            int numCoordinates = appType.Vertices.Count;
+            int numCoordinates = appType.Boundary.Count;
             var coordinates = new Coordinate[numCoordinates + 1];
             for (int iCoordinate = 0; iCoordinate < numCoordinates; iCoordinate++)
             {
-                var vertex = appType.Vertices[iCoordinate];
+                var vertex = appType.Boundary[iCoordinate];
 
                 var coordinate = new Coordinate(vertex.Lng, vertex.Lat);
 
@@ -45,7 +45,7 @@ namespace R5T.Borgue.Database
             }
 
             // Make sure ring is closed (first point equals last point).
-            var firstVertex = appType.Vertices[0];
+            var firstVertex = appType.Boundary[0];
 
             coordinates[numCoordinates] = new Coordinate(firstVertex.Lng, firstVertex.Lat);
 
@@ -56,7 +56,7 @@ namespace R5T.Borgue.Database
             var entity = new EntityType()
             {
                 Identity = appType.Identity.Value,
-                Border = geometry,
+                Boundary = geometry,
             };
 
             return entity;

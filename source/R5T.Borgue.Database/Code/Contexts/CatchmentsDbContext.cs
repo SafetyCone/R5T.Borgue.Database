@@ -5,12 +5,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace R5T.Borgue.Database
 {
-    public class GeographyDbContext : DbContext
+    public class CatchmentsDbContext : DbContext
     {
-        public DbSet<Entities.Geography> Geographies { get; set; }
+        public DbSet<Entities.Catchment> Catchments { get; set; }
 
 
-        public GeographyDbContext(DbContextOptions options)
+        public CatchmentsDbContext(DbContextOptions options)
             : base(options)
         {
         }
@@ -19,7 +19,7 @@ namespace R5T.Borgue.Database
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<Entities.Geography>().HasAlternateKey(x => x.Identity);
+            modelBuilder.Entity<Entities.Catchment>().HasAlternateKey(x => x.Identity);
         }
     }
 }
