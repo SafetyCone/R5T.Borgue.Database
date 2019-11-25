@@ -5,7 +5,6 @@ using System.Linq;
 using GeoAPI.Geometries;
 using Microsoft.EntityFrameworkCore;
 using NetTopologySuite;
-using NetTopologySuite.Geometries;
 
 using R5T.Corcyra;
 using R5T.Venetia;
