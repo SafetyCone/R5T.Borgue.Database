@@ -10,7 +10,7 @@ namespace R5T.Borgue.Database
         public DbSet<Entities.Catchment> Catchments { get; set; }
 
 
-        public CatchmentsDbContext(DbContextOptions options)
+        public CatchmentsDbContext(DbContextOptions<CatchmentsDbContext> options)
             : base(options)
         {
         }
