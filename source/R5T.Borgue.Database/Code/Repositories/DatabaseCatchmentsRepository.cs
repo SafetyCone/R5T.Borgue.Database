@@ -79,5 +79,15 @@ namespace R5T.Borgue.Database
                 return geographies;
             }
         }
+
+        public void SetName(CatchmentIdentity identity, string name)
+        {
+            throw new NotImplementedException();
+        }
+
+        public string GetName(CatchmentIdentity identity)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

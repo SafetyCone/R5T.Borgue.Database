@@ -18,7 +18,8 @@ namespace R5T.Borgue.Database
         {
             var appType = new AppType()
             {
-                Identity =  CatchmentIdentity.From(entityType.Identity)
+                Identity =  CatchmentIdentity.From(entityType.Identity),
+                Name = entityType.Name,
             };
 
             foreach (var coordinate in entityType.Boundary.Coordinates)
@@ -56,6 +57,7 @@ namespace R5T.Borgue.Database
             var entity = new EntityType()
             {
                 Identity = appType.Identity.Value,
+                Name = appType.Name,
                 Boundary = geometry,
             };
 

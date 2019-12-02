@@ -12,6 +12,8 @@ namespace R5T.Borgue.Database.Entities
 
         public Guid Identity { get; set; }
 
+        public string Name { get; set; }
+
         //[Column(TypeName = "geography")] // This is the default for MS SQL.
         public Geometry Boundary { get; set; }
     }
