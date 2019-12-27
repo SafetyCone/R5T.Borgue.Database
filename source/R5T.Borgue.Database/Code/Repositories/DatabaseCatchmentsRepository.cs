@@ -12,17 +12,12 @@ using R5T.Venetia;
 
 namespace R5T.Borgue.Database
 {
-    public class DatabaseCatchmentsRepository : DatabaseRepositoryBase<CatchmentsDbContext>, ICatchmentsRepository
+    public class DatabaseCatchmentsRepository<TDbContext> : ProvidedDatabaseRepositoryBase<TDbContext>, ICatchmentsRepository
+        where TDbContext: DbContext, ICatchmentsDbContext
     {
-        public DatabaseCatchmentsRepository(DbContextOptions<CatchmentsDbContext> dbContextOptions)
-            : base(dbContextOptions)
+        public DatabaseCatchmentsRepository(DbContextOptions<TDbContext> dbContextOptions, IDbContextProvider<TDbContext> dbContextProvider)
+            : base(dbContextOptions, dbContextProvider)
         {
-        }
-
-        public override CatchmentsDbContext GetNewDbContext()
-        {
-            var dbContext = new CatchmentsDbContext(this.DbContextOptions);
-            return dbContext;
         }
 
         public void Add(Catchment geography)
