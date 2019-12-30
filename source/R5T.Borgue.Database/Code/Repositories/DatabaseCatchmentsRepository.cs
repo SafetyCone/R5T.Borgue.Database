@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 using GeoAPI.Geometries;
 using Microsoft.EntityFrameworkCore;
@@ -44,7 +45,15 @@ namespace R5T.Borgue.Database
 
         public Catchment Get(CatchmentIdentity identity)
         {
-            throw new NotImplementedException();
+            var catchment = this.ExecuteInContext(dbContext =>
+            {
+                var catchmentEntity = dbContext.GetCatchment(identity).Single();
+
+                var output = catchmentEntity.ToAppType();
+                return output;
+            });
+
+            return catchment;
         }
 
         public IEnumerable<Catchment> GetAll()
@@ -75,14 +84,63 @@ namespace R5T.Borgue.Database
             }
         }
 
-        public void SetName(CatchmentIdentity identity, string name)
+        public async Task SetName(CatchmentIdentity identity, string name)
         {
-            throw new NotImplementedException();
+            //using (var dbContext = this.GetNewDbContext())
+            //{
+            //    var entity = await dbContext.GetCatchment(identity).SingleAsync();
+
+            //    entity.Name = name;
+
+            //    await dbContext.SaveChangesAsync();
+            //}
+
+            await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+
+                entity.Name = name;
+
+                await dbContext.SaveChangesAsync();
+            });
         }
 
-        public string GetName(CatchmentIdentity identity)
+        public async Task<string> GetName(CatchmentIdentity identity)
         {
-            throw new NotImplementedException();
+            var name = await this.ExecuteInContext(async dbContext =>
+            {
+                var output = await dbContext.GetCatchment(identity).Select(x => x.Name).SingleAsync();
+                return output;
+            });
+
+            return name;
+        }
+
+        public async Task SetBoundary(CatchmentIdentity identity, IEnumerable<LngLat> boundaryVertices)
+        {
+            var polygon = boundaryVertices.ToPolygon();
+
+            await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+
+                entity.Boundary = polygon;
+
+                await dbContext.SaveChangesAsync();
+            });
+        }
+
+        public async Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
+        {
+            var lngLats = await this.ExecuteInContext(async dbContext =>
+            {
+                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+
+                var output = entity.Boundary.ToLngLats();
+                return output;
+            });
+
+            return lngLats;
         }
     }
 }
