@@ -12,8 +12,8 @@ namespace R5T.Borgue.Database
     {
         public static IQueryable<CatchmentEntity> GetCatchment(this ICatchmentsDbContext dbContext, CatchmentIdentity catchmentIdentity)
         {
-            var catchmentEntity = dbContext.Catchments.Where(x => x.Identity == catchmentIdentity.Value);
-            return catchmentEntity;
+            var catchmentQueryable = dbContext.Catchments.Where(x => x.Identity == catchmentIdentity.Value);
+            return catchmentQueryable;
         }
     }
 }
