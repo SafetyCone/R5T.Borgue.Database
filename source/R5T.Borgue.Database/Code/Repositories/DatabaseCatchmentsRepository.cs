@@ -35,7 +35,14 @@ namespace R5T.Borgue.Database
 
         public void Delete(CatchmentIdentity identity)
         {
-            throw new NotImplementedException();
+            this.ExecuteInContext(dbContext =>
+            {
+                var catchmentEntity = dbContext.GetCatchment(identity).Single();
+
+                dbContext.Remove(catchmentEntity);
+
+                dbContext.SaveChanges();
+            });
         }
 
         public bool Exists(CatchmentIdentity identity)
