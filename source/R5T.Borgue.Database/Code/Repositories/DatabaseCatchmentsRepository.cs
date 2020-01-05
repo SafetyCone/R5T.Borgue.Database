@@ -21,40 +21,40 @@ namespace R5T.Borgue.Database
         {
         }
 
-        public void Add(Catchment geography)
+        public async Task Add(Catchment geography)
         {
             var geographyEntity = geography.ToEntityType();
 
-            using (var dbContext = this.GetNewDbContext())
+            await this.ExecuteInContextAsync(async dbContext =>
             {
                 dbContext.Catchments.Add(geographyEntity);
 
-                dbContext.SaveChanges();
-            }
-        }
-
-        public void Delete(CatchmentIdentity identity)
-        {
-            this.ExecuteInContext(dbContext =>
-            {
-                var catchmentEntity = dbContext.GetCatchment(identity).Single();
-
-                dbContext.Remove(catchmentEntity);
-
-                dbContext.SaveChanges();
+                await dbContext.SaveChangesAsync();
             });
         }
 
-        public bool Exists(CatchmentIdentity identity)
+        public async Task Delete(CatchmentIdentity identity)
+        {
+            await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var catchmentEntity = await dbContext.GetCatchment(identity).SingleAsync();
+
+                dbContext.Remove(catchmentEntity);
+
+                await dbContext.SaveChangesAsync();
+            });
+        }
+
+        public Task<bool> Exists(CatchmentIdentity identity)
         {
             throw new NotImplementedException();
         }
 
-        public Catchment Get(CatchmentIdentity identity)
+        public async Task<Catchment> Get(CatchmentIdentity identity)
         {
-            var catchment = this.ExecuteInContext(dbContext =>
+            var catchment = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var catchmentEntity = dbContext.GetCatchment(identity).Single();
+                var catchmentEntity = await dbContext.GetCatchment(identity).SingleAsync();
 
                 var output = catchmentEntity.ToAppType();
                 return output;
@@ -63,45 +63,37 @@ namespace R5T.Borgue.Database
             return catchment;
         }
 
-        public IEnumerable<Catchment> GetAll()
+        public async Task<IEnumerable<Catchment>> GetAll()
         {
-            using (var dbContext = this.GetNewDbContext())
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var geographyEntities = dbContext.Catchments.ToList(); // Perform query now.
-                foreach (var geographyEntity in geographyEntities)
-                {
-                    var geography = geographyEntity.ToAppType();
+                var catchmentEntities = await dbContext.Catchments.ToListAsync(); // Perform query now.
 
-                    yield return geography;
-                }
-            }
+                var output = catchmentEntities.Select(x => x.ToAppType());
+                return output;
+            });
+
+            return catchments;
         }
 
-        public IEnumerable<Catchment> GetAllContainingPoint(LngLat lngLat)
+        public async Task<IEnumerable<Catchment>> GetAllContainingPoint(LngLat lngLat)
         {
             var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
 
             var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
             var point = geometryFactory.CreatePoint(coordinate);
 
-            using (var dbContext = this.GetNewDbContext())
+            var geographies = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var geographies = dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToList();
-                return geographies;
-            }
+                var output = await dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToListAsync();
+                return output;
+            });
+
+            return geographies;
         }
 
         public async Task SetName(CatchmentIdentity identity, string name)
         {
-            //using (var dbContext = this.GetNewDbContext())
-            //{
-            //    var entity = await dbContext.GetCatchment(identity).SingleAsync();
-
-            //    entity.Name = name;
-
-            //    await dbContext.SaveChangesAsync();
-            //}
-
             await this.ExecuteInContextAsync(async dbContext =>
             {
                 var entity = await dbContext.GetCatchment(identity).SingleAsync();
@@ -114,7 +106,7 @@ namespace R5T.Borgue.Database
 
         public async Task<string> GetName(CatchmentIdentity identity)
         {
-            var name = await this.ExecuteInContext(async dbContext =>
+            var name = await this.ExecuteInContextSync(async dbContext =>
             {
                 var output = await dbContext.GetCatchment(identity).Select(x => x.Name).SingleAsync();
                 return output;
@@ -139,7 +131,7 @@ namespace R5T.Borgue.Database
 
         public async Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
         {
-            var lngLats = await this.ExecuteInContext(async dbContext =>
+            var lngLats = await this.ExecuteInContextSync(async dbContext =>
             {
                 var entity = await dbContext.GetCatchment(identity).SingleAsync();
 
