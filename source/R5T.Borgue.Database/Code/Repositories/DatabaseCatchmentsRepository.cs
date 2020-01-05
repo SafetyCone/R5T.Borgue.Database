@@ -106,7 +106,7 @@ namespace R5T.Borgue.Database
 
         public async Task<string> GetName(CatchmentIdentity identity)
         {
-            var name = await this.ExecuteInContextSync(async dbContext =>
+            var name = await this.ExecuteInContextAsync(async dbContext =>
             {
                 var output = await dbContext.GetCatchment(identity).Select(x => x.Name).SingleAsync();
                 return output;
@@ -131,7 +131,7 @@ namespace R5T.Borgue.Database
 
         public async Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
         {
-            var lngLats = await this.ExecuteInContextSync(async dbContext =>
+            var lngLats = await this.ExecuteInContextAsync(async dbContext =>
             {
                 var entity = await dbContext.GetCatchment(identity).SingleAsync();
 
