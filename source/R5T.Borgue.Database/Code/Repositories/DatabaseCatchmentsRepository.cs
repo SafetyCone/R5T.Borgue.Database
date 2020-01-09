@@ -85,7 +85,7 @@ namespace R5T.Borgue.Database
 
             var geographies = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToListAsync();
+                var output = await dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToListAsync(); // Execute now to avoid disposing DbContext.
                 return output;
             });
 
