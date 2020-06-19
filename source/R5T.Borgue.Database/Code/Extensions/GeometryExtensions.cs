@@ -5,6 +5,7 @@ using System.Linq;
 using NetTopologySuite.Geometries;
 
 using R5T.Corcyra;
+using R5T.Magyar;
 using R5T.Magyar.Extensions;
 
 
@@ -17,7 +18,7 @@ namespace R5T.Borgue.Database
         /// </summary>
         public static IEnumerable<LngLat> ToLngLatsXIsLongitude(this Geometry geometry)
         {
-            var lngLats = geometry.Boundary.Coordinates.ExceptLast() // Don't include the last since it is only there to ensure the polygon ring is closed as required by NetTopologySuite.
+            var lngLats = geometry.Boundary.Coordinates.ExceptLast()
                 .Select(coordinate => new LngLat() { Lng = coordinate.X, Lat = coordinate.Y });
 
             return lngLats;
