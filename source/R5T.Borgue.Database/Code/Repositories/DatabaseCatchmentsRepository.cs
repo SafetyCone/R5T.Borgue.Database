@@ -54,7 +54,12 @@ namespace R5T.Borgue.Database
         {
             var catchment = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var catchmentEntity = await dbContext.GetCatchment(identity).SingleAsync();
+                var catchmentEntity = await dbContext.GetCatchment(identity).SingleOrDefaultAsync();
+
+                if (catchmentEntity == null)
+                {
+                    return null;
+                }
 
                 var output = catchmentEntity.ToAppType();
                 return output;
