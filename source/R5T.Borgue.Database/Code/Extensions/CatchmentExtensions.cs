@@ -1,5 +1,7 @@
 ﻿using System;
 
+using GeoAPI.Geometries;
+
 using R5T.Corcyra;
 
 using AppType = R5T.Corcyra.Catchment;
@@ -25,9 +27,9 @@ namespace R5T.Borgue.Database
             return appType;
         }
 
-        public static EntityType ToEntityType(this AppType appType)
+        public static EntityType ToEntityType(this AppType appType, IGeometryFactory geometryFactory)
         {
-            var polygon = appType.Boundary.ToPolygon();
+            var polygon = appType.Boundary.ToPolygon(geometryFactory);
 
             var entity = new EntityType()
             {

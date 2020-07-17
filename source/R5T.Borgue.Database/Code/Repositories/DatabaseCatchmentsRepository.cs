@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-using GeoAPI.Geometries;
 using Microsoft.EntityFrameworkCore;
-using NetTopologySuite;
+
+using GeoAPI.Geometries;
 
 using R5T.Corcyra;
 using R5T.Venetia;
@@ -16,14 +16,21 @@ namespace R5T.Borgue.Database
     public class DatabaseCatchmentsRepository<TDbContext> : ProvidedDatabaseRepositoryBase<TDbContext>, ICatchmentsRepository
         where TDbContext: DbContext, ICatchmentsDbContext
     {
-        public DatabaseCatchmentsRepository(DbContextOptions<TDbContext> dbContextOptions, IDbContextProvider<TDbContext> dbContextProvider)
+        private IGeometryFactoryProvider GeometryFactoryProvider { get; }
+
+
+        public DatabaseCatchmentsRepository(DbContextOptions<TDbContext> dbContextOptions, IDbContextProvider<TDbContext> dbContextProvider,
+            IGeometryFactoryProvider geometryFactoryProvider)
             : base(dbContextOptions, dbContextProvider)
         {
+            this.GeometryFactoryProvider = geometryFactoryProvider;
         }
 
         public async Task Add(Catchment geography)
         {
-            var geographyEntity = geography.ToEntityType();
+            var geographyFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var geographyEntity = geography.ToEntityType(geographyFactory);
 
             await this.ExecuteInContextAsync(async dbContext =>
             {
@@ -83,18 +90,19 @@ namespace R5T.Borgue.Database
 
         public async Task<IEnumerable<Catchment>> GetAllContainingPoint(LngLat lngLat)
         {
-            var geometryFactory = NtsGeometryServices.Instance.CreateGeometryFactory(srid: 4326);
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
 
-            var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
-            var point = geometryFactory.CreatePoint(coordinate);
-
-            var geographies = await this.ExecuteInContextAsync(async dbContext =>
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext.Catchments.Where(x => x.Boundary.Contains(point)).Select(x => x.ToAppType()).ToListAsync(); // Execute now to avoid disposing DbContext.
+                var output = await dbContext
+                    .GetCatchmentsContainingPoint(lngLat, geometryFactory)
+                    .Select(x => x.ToAppType())
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
                 return output;
             });
 
-            return geographies;
+            return catchments;
         }
 
         public async Task SetName(CatchmentIdentity identity, string name)
@@ -122,7 +130,9 @@ namespace R5T.Borgue.Database
 
         public async Task SetBoundary(CatchmentIdentity identity, IEnumerable<LngLat> boundaryVertices)
         {
-            var polygon = boundaryVertices.ToPolygon();
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var polygon = boundaryVertices.ToPolygon(geometryFactory);
 
             await this.ExecuteInContextAsync(async dbContext =>
             {
@@ -145,6 +155,24 @@ namespace R5T.Borgue.Database
             });
 
             return lngLats;
+        }
+
+        public async Task<List<CatchmentIdentity>> GetAllCatchmentIdentitiesContainingPointAsync(LngLat lngLat)
+        {
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var catchmentIdentityValues = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var output = await dbContext
+                    .GetCatchmentsContainingPoint(lngLat, geometryFactory)
+                    .Select(x => x.Identity)
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            var catchmentIdentities = catchmentIdentityValues.Select(x => CatchmentIdentity.From(x)).ToList();
+            return catchmentIdentities;
         }
     }
 }
