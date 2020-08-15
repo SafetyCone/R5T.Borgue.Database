@@ -105,6 +105,55 @@ namespace R5T.Borgue.Database
             return catchments;
         }
 
+        public async Task<List<Catchment>> GetFilteredByName(string nameContains)
+        {
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var output = await dbContext
+                    .GetCatchmentsWithStringInName(nameContains)
+                    .Select(x => x.ToAppType())
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            return catchments;
+        }
+
+        public async Task<List<Catchment>> GetFilteredByNameAndRadius(string nameContains, double radiusDegrees, LngLat lngLat)
+        {
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var output = await dbContext
+                    .GetCatchmentsWithStringInNameAndWithinRadius(nameContains, radiusDegrees, lngLat, geometryFactory)
+                    .Select(x => x.ToAppType())
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            return catchments;
+        }
+
+        public async Task<List<Catchment>> GetAllWithinRadiusOfPoint(double radiusDegrees, LngLat lngLat)
+        {
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var output = await dbContext
+                    .GetCatchmentsIntersectingRadiusFromPoint(radiusDegrees, lngLat, geometryFactory)
+                    .Select(x => x.ToAppType())
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            return catchments;
+        }
+
         public async Task SetName(CatchmentIdentity identity, string name)
         {
             await this.ExecuteInContextAsync(async dbContext =>

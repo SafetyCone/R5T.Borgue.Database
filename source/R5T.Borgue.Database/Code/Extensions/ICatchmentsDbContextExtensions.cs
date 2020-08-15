@@ -30,5 +30,41 @@ namespace R5T.Borgue.Database
 
             return queryable;
         }
+
+        public static IQueryable<CatchmentEntity> GetCatchmentsWithStringInNameAndWithinRadius(this ICatchmentsDbContext catchmentsDbContext, string nameContains, double radiusDegrees, LngLat lngLat, IGeometryFactory geometryFactory)
+        {
+
+            var centerCoordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
+            var center = geometryFactory.CreatePoint(centerCoordinate);
+            var searchArea = center.Buffer(radiusDegrees).Boundary;
+
+            var queryable = catchmentsDbContext.Catchments
+                .Where(x => x.Name.Contains(nameContains))
+                .Where(x => x.Boundary.Intersects(searchArea));
+
+            return queryable;
+        }
+
+        public static IQueryable<CatchmentEntity> GetCatchmentsIntersectingRadiusFromPoint(this ICatchmentsDbContext catchmentsDbContext, double radiusDegrees, LngLat lngLat, IGeometryFactory geometryFactory)
+        {
+            var centerCoordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
+            var center = geometryFactory.CreatePoint(centerCoordinate);
+            var searchArea = center.Buffer(radiusDegrees).Reverse();
+            var searchPerimeter = searchArea.Boundary;
+
+            var queryable = catchmentsDbContext.Catchments
+                .Where(x => !x.Boundary.Disjoint(searchArea));
+                //.Where(x => x.Boundary.Intersects(searchPerimeter));
+
+            return queryable;
+        }
+
+        public static IQueryable<CatchmentEntity> GetCatchmentsWithStringInName(this ICatchmentsDbContext catchmentsDbContext, string nameContains)
+        {
+            var queryable = catchmentsDbContext.Catchments
+                .Where(x => x.Name.Contains(nameContains));
+
+            return queryable;
+        }
     }
 }
