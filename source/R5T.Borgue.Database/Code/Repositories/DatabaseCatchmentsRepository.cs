@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 
-using GeoAPI.Geometries;
-
 using R5T.Corcyra;
 using R5T.Venetia;
 
@@ -44,7 +42,7 @@ namespace R5T.Borgue.Database
         {
             await this.ExecuteInContextAsync(async dbContext =>
             {
-                var catchmentEntity = await dbContext.GetCatchment(identity).SingleAsync();
+                var catchmentEntity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
 
                 dbContext.Remove(catchmentEntity);
 
@@ -61,7 +59,7 @@ namespace R5T.Borgue.Database
         {
             var catchment = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var catchmentEntity = await dbContext.GetCatchment(identity).SingleOrDefaultAsync();
+                var catchmentEntity = await dbContext.Catchments.GetByIdentity(identity).SingleOrDefaultAsync();
 
                 if (catchmentEntity == null)
                 {
@@ -88,13 +86,13 @@ namespace R5T.Borgue.Database
             return catchments;
         }
 
-        public async Task<IEnumerable<Catchment>> GetAllContainingPoint(LngLat lngLat)
+        public async Task<List<Catchment>> GetAllContainingPoint(LngLat lngLat)
         {
             var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
 
             var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext
+                var output = await dbContext.Catchments
                     .GetCatchmentsContainingPoint(lngLat, geometryFactory)
                     .Select(x => x.ToAppType())
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
@@ -105,19 +103,17 @@ namespace R5T.Borgue.Database
             return catchments;
         }
 
-        public async Task<List<Catchment>> GetFilteredByName(string nameContains)
+        public Task<List<Catchment>> GetFilteredByName(string nameContains)
         {
-            var catchments = await this.ExecuteInContextAsync(async dbContext =>
+            return this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext
-                    .GetCatchmentsWithStringInName(nameContains)
+                var catchments = await dbContext.Catchments
+                    .GetContainingName(nameContains)
                     .Select(x => x.ToAppType())
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
 
-                return output;
+                return catchments;
             });
-
-            return catchments;
         }
 
         public async Task<List<Catchment>> GetFilteredByNameAndRadius(string nameContains, double radiusDegrees, LngLat lngLat)
@@ -126,7 +122,7 @@ namespace R5T.Borgue.Database
 
             var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext
+                var output = await dbContext.Catchments
                     .GetCatchmentsWithStringInNameAndWithinRadius(nameContains, radiusDegrees, lngLat, geometryFactory)
                     .Select(x => x.ToAppType())
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
@@ -143,8 +139,8 @@ namespace R5T.Borgue.Database
 
             var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext
-                    .GetCatchmentsIntersectingRadiusFromPoint(radiusDegrees, lngLat, geometryFactory)
+                var output = await dbContext.Catchments
+                    .GetWithinRadius(radiusDegrees, lngLat, geometryFactory)
                     .Select(x => x.ToAppType())
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
 
@@ -154,11 +150,11 @@ namespace R5T.Borgue.Database
             return catchments;
         }
 
-        public async Task SetName(CatchmentIdentity identity, string name)
+        public Task SetName(CatchmentIdentity identity, string name)
         {
-            await this.ExecuteInContextAsync(async dbContext =>
+            return this.ExecuteInContextAsync(async dbContext =>
             {
-                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+                var entity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
 
                 entity.Name = name;
 
@@ -166,15 +162,13 @@ namespace R5T.Borgue.Database
             });
         }
 
-        public async Task<string> GetName(CatchmentIdentity identity)
+        public Task<string> GetName(CatchmentIdentity identity)
         {
-            var name = await this.ExecuteInContextAsync(async dbContext =>
+            return this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext.GetCatchment(identity).Select(x => x.Name).SingleAsync();
-                return output;
+                var name = await dbContext.Catchments.GetByIdentity(identity).Select(x => x.Name).SingleAsync();
+                return name;
             });
-
-            return name;
         }
 
         public async Task SetBoundary(CatchmentIdentity identity, IEnumerable<LngLat> boundaryVertices)
@@ -185,7 +179,7 @@ namespace R5T.Borgue.Database
 
             await this.ExecuteInContextAsync(async dbContext =>
             {
-                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+                var entity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
 
                 entity.Boundary = polygon;
 
@@ -193,17 +187,15 @@ namespace R5T.Borgue.Database
             });
         }
 
-        public async Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
+        public Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
         {
-            var lngLats = await this.ExecuteInContextAsync(async dbContext =>
+            return this.ExecuteInContextAsync(async dbContext =>
             {
-                var entity = await dbContext.GetCatchment(identity).SingleAsync();
+                var entity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
 
-                var output = entity.Boundary.ToLngLats();
-                return output;
+                var lngLats = entity.Boundary.ToLngLats();
+                return lngLats;
             });
-
-            return lngLats;
         }
 
         public async Task<List<CatchmentIdentity>> GetAllCatchmentIdentitiesContainingPointAsync(LngLat lngLat)
@@ -212,7 +204,7 @@ namespace R5T.Borgue.Database
 
             var catchmentIdentityValues = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var output = await dbContext
+                var output = await dbContext.Catchments
                     .GetCatchmentsContainingPoint(lngLat, geometryFactory)
                     .Select(x => x.Identity)
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
