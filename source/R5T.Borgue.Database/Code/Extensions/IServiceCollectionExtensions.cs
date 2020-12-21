@@ -16,7 +16,7 @@ namespace R5T.Borgue.Database
         /// </summary>
         public static IServiceCollection AddDatabaseCatchmentsRepository<TDbContext>(this IServiceCollection services,
             IServiceAction<IGeometryFactoryProvider> geometryFactoryProviderAction)
-            where TDbContext: DbContext, ICatchmentsDbContext
+            where TDbContext: DbContext, ICatchmentsDbContext, IGridUnitsDbContext
         {
             services
                 .AddSingleton<ICatchmentsRepository, DatabaseCatchmentsRepository<TDbContext>>()
@@ -31,7 +31,7 @@ namespace R5T.Borgue.Database
         /// </summary>
         public static IServiceAction<ICatchmentsRepository> AddDatabaseCatchmentsRepositoryAction<TDbContext>(this IServiceCollection services,
             IServiceAction<IGeometryFactoryProvider> geometryFactoryProviderAction)
-            where TDbContext : DbContext, ICatchmentsDbContext
+            where TDbContext : DbContext, ICatchmentsDbContext, IGridUnitsDbContext
         {
             var serviceAction = ServiceAction.New<ICatchmentsRepository>(() => services.AddDatabaseCatchmentsRepository<TDbContext>(
                 geometryFactoryProviderAction));
@@ -43,7 +43,7 @@ namespace R5T.Borgue.Database
         /// Adds the <see cref="DatabaseCatchmentsRepository{TDbContext}"/> implementation of <see cref="ICatchmentsRepository"/> as <see cref="ServiceLifetime.Singleton"/>.
         /// </summary>
         public static IServiceCollection AddDatabaseCatchmentsRepository<TDbContext>(this IServiceCollection services)
-            where TDbContext : DbContext, ICatchmentsDbContext
+            where TDbContext : DbContext, ICatchmentsDbContext, IGridUnitsDbContext
         {
             var geometryFactoryProviderAction = services.AddGeometryFactoryProviderAction();
 
@@ -56,7 +56,7 @@ namespace R5T.Borgue.Database
         /// Adds the <see cref="DatabaseCatchmentsRepository{TDbContext}"/> implementation of <see cref="ICatchmentsRepository"/> as <see cref="ServiceLifetime.Singleton"/>.
         /// </summary>
         public static IServiceAction<ICatchmentsRepository> AddDatabaseCatchmentsRepositoryAction<TDbContext>(this IServiceCollection services)
-            where TDbContext : DbContext, ICatchmentsDbContext
+            where TDbContext : DbContext, ICatchmentsDbContext, IGridUnitsDbContext
         {
             var serviceAction = ServiceAction.New<ICatchmentsRepository>(() => services.AddDatabaseCatchmentsRepository<TDbContext>());
 

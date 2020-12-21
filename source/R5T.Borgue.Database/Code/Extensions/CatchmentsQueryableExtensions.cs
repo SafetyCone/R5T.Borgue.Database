@@ -34,14 +34,16 @@ namespace R5T.Borgue.Database
             return queryable;
         }
 
-        public static IQueryable<CatchmentEntity> GetCatchmentsContainingPoint(this IQueryable<CatchmentEntity> catchments, LngLat lngLat, IGeometryFactory geometryFactory)
-        {
-            var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
-            var point = geometryFactory.CreatePoint(coordinate);
+        // Removed because with gridding, this can't be an extension for a single table,
+        // it needs three tables (Catchments, GridUnits, and CatchmentGridUnits) to work
+        // public static IQueryable<CatchmentEntity> GetCatchmentsContainingPoint(this IQueryable<CatchmentEntity> catchments, LngLat lngLat, IGeometryFactory geometryFactory)
+        // {
+        //     var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
+        //     var point = geometryFactory.CreatePoint(coordinate);
 
-            var queryable = catchments.Where(x => x.Boundary.Contains(point));
-            return queryable;
-        }
+        //     var queryable = catchments.Where(x => x.Boundary.Contains(point));
+        //     return queryable;
+        // }
 
         public static IQueryable<CatchmentEntity> GetCatchmentsWithStringInNameAndWithinRadius(this IQueryable<CatchmentEntity> catchments, string nameContains, double radiusDegrees, LngLat lngLat, IGeometryFactory geometryFactory)
         {

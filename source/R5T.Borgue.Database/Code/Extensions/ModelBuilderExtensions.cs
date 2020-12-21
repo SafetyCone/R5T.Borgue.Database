@@ -13,5 +13,16 @@ namespace R5T.Borgue.Database
 
             return modelBuilder;
         }
+
+        public static ModelBuilder ForGriddedCatchmentsDbContext(this ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Entities.GridUnit>()
+                .HasAlternateKey(x => x.GUID)
+                ;
+            modelBuilder.Entity<Entities.CatchmentGridUnit>()
+                .HasAlternateKey(x => new { x.CatchmentIdentity, x.GridUnitIdentity});
+
+            return modelBuilder.ForCatchmentsDbContext();
+        }
     }
 }
