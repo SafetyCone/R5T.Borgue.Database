@@ -117,6 +117,7 @@ namespace R5T.Borgue.Database
                              join catchmentGridUnit  in dbContext.CatchmentGridUnits
                              on catchment.Identity equals catchmentGridUnit.CatchmentIdentity
                              where catchmentGridUnit.GridUnitIdentity == relevantGridUnitIdentity.Value
+                             where catchment.Boundary.Contains(point)
                              select catchment;
                 }
                 return await result.ToListAsync();
