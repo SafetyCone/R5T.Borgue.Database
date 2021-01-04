@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
+
+using NetTopologySuite;
+using NetTopologySuite.Geometries;
 
 using GeoAPI.Geometries;
 
@@ -20,13 +22,37 @@ namespace R5T.Borgue.Database
         where TDbContext: DbContext, ICatchmentsDbContext, IGridUnitsDbContext
     {
         private IGeometryFactoryProvider GeometryFactoryProvider { get; }
+        private IGridUnitsRepository GridUnitsRepository { get; }
 
 
         public DatabaseCatchmentsRepository(DbContextOptions<TDbContext> dbContextOptions, IDbContextProvider<TDbContext> dbContextProvider,
-            IGeometryFactoryProvider geometryFactoryProvider)
+            IGeometryFactoryProvider geometryFactoryProvider,
+            IGridUnitsRepository gridUnitsRepository)
             : base(dbContextOptions, dbContextProvider)
         {
             this.GeometryFactoryProvider = geometryFactoryProvider;
+            this.GridUnitsRepository = gridUnitsRepository;
+        }
+
+        /// <summary>
+        /// A way to add a multipolygon. Avoids erroneous conversion from multiple polygons containing holes to a simple list of coordinates.
+        /// </summary>
+        public async Task Add(Geometry geometry, Catchment otherCatchmentInfo)
+        {
+            var geographyEntity = new Entities.Catchment {
+                Identity = otherCatchmentInfo.Identity.Value,
+                Name = otherCatchmentInfo.Name,
+                Boundary = geometry,
+            };
+
+            await this.ExecuteInContextAsync(async dbContext =>
+            {
+                dbContext.Catchments.Add(geographyEntity);
+
+                await dbContext.SaveChangesAsync();
+            });
+            // AFTER the catchment is added, set its grid units!
+            await this.GridUnitsRepository.SetGridUnitsForCatchment(otherCatchmentInfo.Identity);
         }
 
         public async Task Add(Catchment geography)
@@ -41,6 +67,8 @@ namespace R5T.Borgue.Database
 
                 await dbContext.SaveChangesAsync();
             });
+            // AFTER the catchment is added, set its grid units!
+            await this.GridUnitsRepository.SetGridUnitsForCatchment(geography.Identity);
         }
 
         public async Task Delete(CatchmentIdentity identity)
@@ -55,9 +83,28 @@ namespace R5T.Borgue.Database
             });
         }
 
-        public Task<bool> Exists(CatchmentIdentity identity)
+        public async Task<bool> Exists(CatchmentIdentity identity)
         {
-            throw new NotImplementedException();
+            var exists = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var catchmentWithIdentityExists = await dbContext.Catchments
+                    .Where(x => x.Identity == identity.Value)
+                    .AnyAsync();
+                return catchmentWithIdentityExists;
+            });
+            return exists;
+        }
+
+        public async Task<bool> Exists(string catchmentName)
+        {
+            var exists = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var catchmentWithNameExists = await dbContext.Catchments
+                    .Where(x => x.Name == catchmentName)
+                    .AnyAsync();
+                return catchmentWithNameExists;
+            });
+            return exists;
         }
 
         public async Task<Catchment> Get(CatchmentIdentity identity)
@@ -226,6 +273,19 @@ namespace R5T.Borgue.Database
 
                 entity.Boundary = polygon;
 
+                await dbContext.SaveChangesAsync();
+            });
+
+            // AFTER the catchment is updated, set its grid units!
+            await this.GridUnitsRepository.SetGridUnitsForCatchment(identity);
+        }
+
+        public async Task SetBoundary(CatchmentIdentity identity, Geometry newGeometry)
+        {
+            await this.ExecuteInContextAsync(async dbContext => 
+            {
+                var entity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
+                entity.Boundary = newGeometry;
                 await dbContext.SaveChangesAsync();
             });
         }
