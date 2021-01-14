@@ -37,38 +37,41 @@ namespace R5T.Borgue.Database
         /// <summary>
         /// A way to add a multipolygon. Avoids erroneous conversion from multiple polygons containing holes to a simple list of coordinates.
         /// </summary>
-        public async Task Add(Geometry geometry, Catchment otherCatchmentInfo)
-        {
-            var geographyEntity = new Entities.Catchment {
-                Identity = otherCatchmentInfo.Identity.Value,
-                Name = otherCatchmentInfo.Name,
-                Boundary = geometry,
-            };
-
-            await this.ExecuteInContextAsync(async dbContext =>
-            {
-                dbContext.Catchments.Add(geographyEntity);
-
-                await dbContext.SaveChangesAsync();
-            });
-            // AFTER the catchment is added, set its grid units!
-            await this.GridUnitsRepository.SetGridUnitsForCatchment(otherCatchmentInfo.Identity);
-        }
-
-        public async Task Add(Catchment geography)
+        public async Task Add(GeoJsonMultiPolygonJsonString geoJsonMultiPolygonJsonString, Catchment otherCatchmentInfo)
         {
             var geographyFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
 
-            var geographyEntity = geography.ToEntityType(geographyFactory);
+            var multiPolygonGeometry = geoJsonMultiPolygonJsonString.ToMultiPolygon(geographyFactory);
 
+            var catchmentEntity = new Entities.Catchment {
+                Identity = otherCatchmentInfo.Identity.Value,
+                Name = otherCatchmentInfo.Name,
+                Boundary = multiPolygonGeometry,
+            };
+
+            await this.AddCatchmentEntity(catchmentEntity, otherCatchmentInfo.Identity);
+        }
+
+        public async Task Add(Catchment catchment)
+        {
+            var geographyFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var catchmentEntity = catchment.ToEntityType(geographyFactory);
+
+            await this.AddCatchmentEntity(catchmentEntity, catchment.Identity);
+        }
+
+        private async Task AddCatchmentEntity(Entities.Catchment catchmentEntity, CatchmentIdentity catchmentIdentity)
+        {
             await this.ExecuteInContextAsync(async dbContext =>
             {
-                dbContext.Catchments.Add(geographyEntity);
+                dbContext.Catchments.Add(catchmentEntity);
 
                 await dbContext.SaveChangesAsync();
             });
+
             // AFTER the catchment is added, set its grid units!
-            await this.GridUnitsRepository.SetGridUnitsForCatchment(geography.Identity);
+            await this.GridUnitsRepository.SetGridUnitsForCatchment(catchmentIdentity);
         }
 
         public async Task Delete(CatchmentIdentity identity)
@@ -280,12 +283,18 @@ namespace R5T.Borgue.Database
             await this.GridUnitsRepository.SetGridUnitsForCatchment(identity);
         }
 
-        public async Task SetBoundary(CatchmentIdentity identity, Geometry newGeometry)
+        public async Task SetBoundary(CatchmentIdentity identity, GeoJsonMultiPolygonJsonString newGeoJsonMultiPolygonJsonString)
         {
+            var geographyFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var newMultiPolygonGeometry = newGeoJsonMultiPolygonJsonString.ToMultiPolygon(geographyFactory);
+
             await this.ExecuteInContextAsync(async dbContext => 
             {
                 var entity = await dbContext.Catchments.GetByIdentity(identity).SingleAsync();
-                entity.Boundary = newGeometry;
+
+                entity.Boundary = newMultiPolygonGeometry;
+
                 await dbContext.SaveChangesAsync();
             });
         }
