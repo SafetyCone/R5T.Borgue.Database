@@ -181,13 +181,14 @@ namespace R5T.Borgue.Database
         public async Task<List<Catchment>> GetAllContainingPoint(LngLat lngLat)
         {
             var catchmentEntities = await this.GetCatchmentEntitiesContainingPoint(lngLat);
+
             var catchmentList = catchmentEntities
                 .Select(x => x.ToAppType())
                 .ToList();
             return catchmentList;
         }
 
-        public async Task<List<CatchmentIdentity>> GetAllCatchmentIdentitiesContainingPointAsync(LngLat lngLat)
+        public async Task<List<CatchmentIdentity>> GetAllCatchmentIdentitiesContainingPoint(LngLat lngLat)
         {
             var catchmentEntities = await this.GetCatchmentEntitiesContainingPoint(lngLat);
             var catchmentIdentityList = catchmentEntities
@@ -323,6 +324,16 @@ namespace R5T.Borgue.Database
             });
 
             return gettingCatchment;
+        }
+
+        public async Task<List<CatchmentGeoJson>> GetAllContainingPointGeoJson(LngLat lngLat)
+        {
+            var catchmentEntities = await this.GetCatchmentEntitiesContainingPoint(lngLat);
+
+            var catchmentList = catchmentEntities
+                .Select(x => x.ToAppTypeGeoJson())
+                .ToList();
+            return catchmentList;
         }
     }
 }
