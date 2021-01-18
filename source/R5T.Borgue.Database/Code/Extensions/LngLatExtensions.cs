@@ -12,6 +12,21 @@ namespace R5T.Borgue.Database
 {
     public static class LngLatExtensions
     {
+        public static Coordinate ToCoordinateXIsLongitude(this LngLat lngLat)
+        {
+            var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
+            return coordinate;
+        }
+
+        /// <summary>
+        /// Uses <see cref="ToCoordinateXIsLongitude(LngLat)"/> as the default.
+        /// </summary>
+        public static Coordinate ToCoordinate(this LngLat lngLat)
+        {
+            var coordinate = lngLat.ToCoordinateXIsLongitude();
+            return coordinate;
+        }
+
         /// <summary>
         /// Provides a polygon from <see cref="LngLat"/> values assuming that polygon coordinate X-values are longitudes (and Y-values are latitudes).
         /// </summary>

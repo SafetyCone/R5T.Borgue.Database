@@ -5,12 +5,10 @@ using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 
-using NetTopologySuite;
-using NetTopologySuite.Geometries;
-
 using GeoAPI.Geometries;
 
 using R5T.Corcyra;
+using R5T.Magyar;
 using R5T.Venetia;
 
 using CatchmentEntity = R5T.Borgue.Database.Entities.Catchment;
@@ -145,17 +143,20 @@ namespace R5T.Borgue.Database
         private async Task<List<CatchmentEntity>> GetCatchmentEntitiesContainingPoint(LngLat lngLat)
         {
             var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
             var catchmentEntities = await this.ExecuteInContextAsync(async dbContext =>
             {
-                var coordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
+                var coordinate = lngLat.ToCoordinate();
+
                 var point = geometryFactory.CreatePoint(coordinate);
-                var relevantGridUnitIdentity = await dbContext.GridUnits
+
+                var relevantGridUnitIdentityValues = await dbContext.GridUnits
                     .Where(x => x.Boundary.Contains(point))
-                    .Select(x => GridUnitIdentity.From(x.GUID))
-                    .SingleOrDefaultAsync();
+                    .Select(x => x.GUID)
+                    .ToListAsync();
 
                 IQueryable<CatchmentEntity> result;
-                if (relevantGridUnitIdentity == default)
+                if (relevantGridUnitIdentityValues.IsEmpty())
                 {
                     // Search all catchments. This may take a while.
                     result = dbContext.Catchments
@@ -164,12 +165,13 @@ namespace R5T.Borgue.Database
                 else
                 {
                     result = from catchment in dbContext.Catchments
-                             join catchmentGridUnit  in dbContext.CatchmentGridUnits
+                             join catchmentGridUnit in dbContext.CatchmentGridUnits
                              on catchment.Identity equals catchmentGridUnit.CatchmentIdentity
-                             where catchmentGridUnit.GridUnitIdentity == relevantGridUnitIdentity.Value
+                             where relevantGridUnitIdentityValues.Contains(catchmentGridUnit.GridUnitIdentity)
                              where catchment.Boundary.Contains(point)
                              select catchment;
                 }
+
                 return await result.ToListAsync();
             });
 
@@ -308,6 +310,19 @@ namespace R5T.Borgue.Database
                 var lngLats = entity.Boundary.ToLngLats();
                 return lngLats;
             });
+        }
+
+        public Task<CatchmentGeoJson> GetByIdentity(CatchmentIdentity catchmentIdentity)
+        {
+            var gettingCatchment = this.ExecuteInContextAsync(async dbContext =>
+            {
+                var entityType = await dbContext.Catchments.GetByIdentity(catchmentIdentity).SingleAsync();
+
+                var appTypeGeoJson = entityType.ToAppTypeGeoJson();
+                return appTypeGeoJson;
+            });
+
+            return gettingCatchment;
         }
     }
 }

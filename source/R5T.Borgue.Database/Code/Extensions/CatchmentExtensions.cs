@@ -1,10 +1,12 @@
 ﻿using System;
 
 using GeoAPI.Geometries;
+using NetTopologySuite.Geometries;
 
 using R5T.Corcyra;
 
 using AppType = R5T.Corcyra.Catchment;
+using AppTypeGeoJson = R5T.Corcyra.CatchmentGeoJson;
 using EntityType = R5T.Borgue.Database.Entities.Catchment;
 
 
@@ -24,6 +26,17 @@ namespace R5T.Borgue.Database
 
             appType.Boundary.AddRange(lngLats);
 
+            return appType;
+        }
+
+        public static AppTypeGeoJson ToAppTypeGeoJson(this EntityType entityType)
+        {
+            var appType = new AppTypeGeoJson()
+            {
+                Identity = CatchmentIdentity.From(entityType.Identity),
+                Name = entityType.Name,
+                MultiPolygonGeoJsonText = (entityType.Boundary as MultiPolygon).ToGeoJsonMultiPolygonJsonString(),
+            };
             return appType;
         }
 
