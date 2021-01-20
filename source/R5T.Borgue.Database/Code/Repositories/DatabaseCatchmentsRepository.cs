@@ -228,14 +228,14 @@ namespace R5T.Borgue.Database
             return catchments;
         }
 
-        public async Task<List<Catchment>> GetAllWithinRadiusOfPoint(double radiusDegrees, LngLat lngLat)
+        public async Task<List<Catchment>> GetAllWithinRadiusOfPoint(double radiusInDegrees, LngLat lngLat)
         {
             var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
 
             var catchments = await this.ExecuteInContextAsync(async dbContext =>
             {
                 var output = await dbContext.Catchments
-                    .GetWithinRadius(radiusDegrees, lngLat, geometryFactory)
+                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
                     .Select(x => x.ToAppType())
                     .ToListAsync(); // Execute now to avoid disposing DbContext.
 
@@ -334,6 +334,23 @@ namespace R5T.Borgue.Database
                 .Select(x => x.ToAppTypeGeoJson())
                 .ToList();
             return catchmentList;
+        }
+
+        public async Task<List<CatchmentGeoJson>> GetAllWithinRadiusOfPointGeoJson(double radiusInDegrees, LngLat lngLat)
+        {
+            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+            var catchments = await this.ExecuteInContextAsync(async dbContext =>
+            {
+                var output = await dbContext.Catchments
+                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
+                    .Select(x => x.ToAppTypeGeoJson())
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            return catchments;
         }
     }
 }
