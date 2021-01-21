@@ -12,6 +12,7 @@ using R5T.Magyar;
 using R5T.Venetia;
 
 using CatchmentEntity = R5T.Borgue.Database.Entities.Catchment;
+using GridUnitEntity = R5T.Borgue.Database.Entities.GridUnit;
 
 
 namespace R5T.Borgue.Database
@@ -19,6 +20,29 @@ namespace R5T.Borgue.Database
     public class DatabaseCatchmentsRepository<TDbContext> : ProvidedDatabaseRepositoryBase<TDbContext>, ICatchmentsRepository
         where TDbContext: DbContext, ICatchmentsDbContext, IGridUnitsDbContext
     {
+        #region Static
+
+        private static IQueryable<CatchmentEntity> GetCatchmentsBasedOnGridUnitList(TDbContext dbContext, List<Guid> relevantGridUnitIdentityValues, IQueryable<CatchmentEntity> catchmentsWithinRadius)
+        {
+            if (relevantGridUnitIdentityValues.IsEmpty())
+            {
+                // Do thing the slow, old-fashioned way.
+                return catchmentsWithinRadius;
+            }
+            else
+            {
+                return
+                    from catchment in catchmentsWithinRadius
+                    join catchmentGridUnit in dbContext.CatchmentGridUnits
+                        on catchment.Identity equals catchmentGridUnit.CatchmentIdentity
+                    where relevantGridUnitIdentityValues.Contains(catchmentGridUnit.GridUnitIdentity)
+                    select catchment;
+            }
+        }
+
+        #endregion
+
+
         private IGeometryFactoryProvider GeometryFactoryProvider { get; }
         private IGridUnitsRepository GridUnitsRepository { get; }
 
@@ -30,6 +54,19 @@ namespace R5T.Borgue.Database
         {
             this.GeometryFactoryProvider = geometryFactoryProvider;
             this.GridUnitsRepository = gridUnitsRepository;
+        }
+
+        protected Task<TOutput> ExecuteInContextAsyncWithGeometryFactory<TOutput>(Func<TDbContext, IGeometryFactory, Task<TOutput>> function)
+        {
+            var gettingOutput = this.ExecuteInContextAsync(async dbContext =>
+            {
+                var geographyFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+
+                var output = await function(dbContext, geographyFactory);
+                return output;
+            });
+
+            return gettingOutput;
         }
 
         /// <summary>
@@ -142,9 +179,7 @@ namespace R5T.Borgue.Database
         // Methods for getting catchments for a point (e.g. for anomaly catchment assignment or goastbusters)
         private async Task<List<CatchmentEntity>> GetCatchmentEntitiesContainingPoint(LngLat lngLat)
         {
-            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
-
-            var catchmentEntities = await this.ExecuteInContextAsync(async dbContext =>
+            var catchmentEntities = await this.ExecuteInContextAsyncWithGeometryFactory(async (dbContext, geometryFactory) =>
             {
                 var coordinate = lngLat.ToCoordinate();
 
@@ -176,6 +211,41 @@ namespace R5T.Borgue.Database
             });
 
             return catchmentEntities;
+        }
+
+        private Task<List<CatchmentEntity>> GetCatchmentEntitiesWithinRadiusWithoutGridding(double radiusInDegrees, LngLat lngLat)
+        {
+            var gettingCatchmentEntiies = this.ExecuteInContextAsyncWithGeometryFactory(async (dbContext, geometryFactory) =>
+            {
+                var output = await dbContext.Catchments
+                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
+                    .ToListAsync(); // Execute now to avoid disposing DbContext.
+
+                return output;
+            });
+
+            return gettingCatchmentEntiies;
+        }
+
+        private Task<List<CatchmentEntity>> GetCatchmentEntitiesWithinRadiusViaGridding(double radiusInDegrees, LngLat lngLat)
+        {
+            var gettingCatchmentEntities = this.ExecuteInContextAsyncWithGeometryFactory(async (dbContext, geometryFactory) =>
+            {
+                var relevantGridUnitIdentityValues = await dbContext.GridUnits
+                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
+                    .Select(x => x.GUID)
+                    .ToListAsync();
+
+                var catchmentsWithinRadius = dbContext.Catchments
+                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory);
+
+                var catchmentsWithinRadiusViaGridding = await DatabaseCatchmentsRepository<TDbContext>.GetCatchmentsBasedOnGridUnitList(dbContext, relevantGridUnitIdentityValues, catchmentsWithinRadius)
+                    .ToListAsync();
+
+                return catchmentsWithinRadiusViaGridding;
+            });
+
+            return gettingCatchmentEntities;
         }
 
         public async Task<List<Catchment>> GetAllContainingPoint(LngLat lngLat)
@@ -230,17 +300,11 @@ namespace R5T.Borgue.Database
 
         public async Task<List<Catchment>> GetAllWithinRadiusOfPoint(double radiusInDegrees, LngLat lngLat)
         {
-            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+            var catchmentEntities = await this.GetCatchmentEntitiesWithinRadiusViaGridding(radiusInDegrees, lngLat);
 
-            var catchments = await this.ExecuteInContextAsync(async dbContext =>
-            {
-                var output = await dbContext.Catchments
-                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
-                    .Select(x => x.ToAppType())
-                    .ToListAsync(); // Execute now to avoid disposing DbContext.
-
-                return output;
-            });
+            var catchments = catchmentEntities
+                .Select(x => x.ToAppType())
+                .ToList();
 
             return catchments;
         }
@@ -338,17 +402,12 @@ namespace R5T.Borgue.Database
 
         public async Task<List<CatchmentGeoJson>> GetAllWithinRadiusOfPointGeoJson(double radiusInDegrees, LngLat lngLat)
         {
-            var geometryFactory = await this.GeometryFactoryProvider.GetGeometryFactoryAsync();
+            //var catchmentEntities = await this.GetCatchmentEntitiesWithinRadiusWithoutGridding(radiusInDegrees, lngLat); // 29s
+            var catchmentEntities = await this.GetCatchmentEntitiesWithinRadiusViaGridding(radiusInDegrees, lngLat);
 
-            var catchments = await this.ExecuteInContextAsync(async dbContext =>
-            {
-                var output = await dbContext.Catchments
-                    .GetWithinRadius(radiusInDegrees, lngLat, geometryFactory)
-                    .Select(x => x.ToAppTypeGeoJson())
-                    .ToListAsync(); // Execute now to avoid disposing DbContext.
-
-                return output;
-            });
+            var catchments = catchmentEntities
+                .Select(x => x.ToAppTypeGeoJson())
+                .ToList();
 
             return catchments;
         }

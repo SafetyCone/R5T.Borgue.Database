@@ -12,11 +12,11 @@ namespace R5T.Borgue.Database
 {
     public static class CatchmentsQueryableExtensions
     {
-        public static IQueryable<CatchmentEntity> GetWithinRadius(this IQueryable<CatchmentEntity> catchments, double radiusDegrees, LngLat lngLat, IGeometryFactory geometryFactory)
+        public static IQueryable<CatchmentEntity> GetWithinRadius(this IQueryable<CatchmentEntity> catchments, double radiusInDegrees, LngLat lngLat, IGeometryFactory geometryFactory)
         {
             var centerCoordinate = new Coordinate(lngLat.Lng, lngLat.Lat);
-            var center = geometryFactory.CreatePoint(centerCoordinate);
-            var searchArea = center.Buffer(radiusDegrees).Reverse();
+            var centerPoint = geometryFactory.CreatePoint(centerCoordinate);
+            var searchArea = centerPoint.Buffer(radiusInDegrees).Reverse();
 
             var queryable = catchments.Where(x => !x.Boundary.Disjoint(searchArea));
             return queryable;
