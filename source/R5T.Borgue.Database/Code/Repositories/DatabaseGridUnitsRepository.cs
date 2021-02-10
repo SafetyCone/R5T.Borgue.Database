@@ -135,7 +135,7 @@ namespace R5T.Borgue.Database
             });
         }
 
-        public Task<IEnumerable<LngLat>> GetBoundary(GridUnitIdentity identity)
+        public Task<LngLat[]> GetBoundary(GridUnitIdentity identity)
         {
             return this.ExecuteInContextAsync(async dbContext =>
             {

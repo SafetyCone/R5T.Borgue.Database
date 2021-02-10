@@ -366,7 +366,7 @@ namespace R5T.Borgue.Database
             });
         }
 
-        public Task<IEnumerable<LngLat>> GetBoundary(CatchmentIdentity identity)
+        public Task<LngLat[]> GetBoundary(CatchmentIdentity identity)
         {
             return this.ExecuteInContextAsync(async dbContext =>
             {

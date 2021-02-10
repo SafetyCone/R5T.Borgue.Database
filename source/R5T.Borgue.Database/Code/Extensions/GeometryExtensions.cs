@@ -16,15 +16,16 @@ namespace R5T.Borgue.Database
         /// <summary>
         /// Converts a geometry to an <see cref="LngLat"/> enumerable assuming that X-values are longitudes (and Y-values are latitudes).
         /// </summary>
-        public static IEnumerable<LngLat> ToLngLatsXIsLongitude(this Geometry geometry)
+        public static LngLat[] ToLngLatsXIsLongitude(this Geometry geometry)
         {
             var lngLats = geometry.Boundary.Coordinates.ExceptLast()
-                .Select(coordinate => new LngLat() { Lng = coordinate.X, Lat = coordinate.Y });
+                .Select(coordinate => new LngLat() { Lng = coordinate.X, Lat = coordinate.Y })
+                .ToArray();
 
             return lngLats;
         }
 
-        public static IEnumerable<LngLat> ToLngLats(this Geometry geometry)
+        public static LngLat[] ToLngLats(this Geometry geometry)
         {
             var lngLats = geometry.ToLngLatsXIsLongitude();
             return lngLats;
