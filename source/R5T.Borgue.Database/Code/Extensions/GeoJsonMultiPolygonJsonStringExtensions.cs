@@ -13,6 +13,10 @@ namespace R5T.Borgue.Database
 {
     public static class GeoJsonMultiPolygonJsonStringExtensions
     {
+        /// <summary>
+        /// Use a geometry factory to convert a multipolygon geojson string into a multipolygon.
+        /// NOTE: this requires that the keys 'type' and 'coordinates' be all-lowercase.
+        /// </summary>
         public static MultiPolygon ToMultiPolygon(this GeoJsonMultiPolygonJsonString geoJsonMultiPolygonJsonString, IGeometryFactory geometryFactory)
         {
             // Deserialize string to a JObject.
