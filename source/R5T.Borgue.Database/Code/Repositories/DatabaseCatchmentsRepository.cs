@@ -13,7 +13,7 @@ using R5T.Venetia;
 
 using CatchmentEntity = R5T.Borgue.Database.Entities.Catchment;
 using GridUnitEntity = R5T.Borgue.Database.Entities.GridUnit;
-
+using System.Text.RegularExpressions;
 
 namespace R5T.Borgue.Database
 {
@@ -410,6 +410,29 @@ namespace R5T.Borgue.Database
                 .ToList();
 
             return catchments;
+        }
+
+        public Task<(CatchmentIdentity Identity, string Name)[]> FindIdentityNamePairsByRegexOnName(Regex regexOnName)
+        {
+            var catchmentIdentities = this.ExecuteInContextAsync(async dbContext =>
+            {
+                // Oh dear, there is no SQL-native regex concept, so the implementation must get *all* names and regex locally. (~10,000 should be ok...)
+                var allNamesAndIdentities = await dbContext.Catchments
+                    .Select(x => new { x.Name, x.Identity })
+                    .ToListAsync();
+
+                var matchingNamesAndIdentities = allNamesAndIdentities
+                    .Where(x => regexOnName.IsMatch(x.Name ?? Strings.Empty))
+                    .ToList();
+
+                var output = matchingNamesAndIdentities
+                    .Select(x => (CatchmentIdentity.From(x.Identity), x.Name))
+                    .ToArray();
+
+                return output;
+            });
+
+            return catchmentIdentities;
         }
     }
 }
