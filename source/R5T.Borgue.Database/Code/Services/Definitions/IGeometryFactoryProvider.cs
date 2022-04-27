@@ -3,10 +3,13 @@ using System.Threading.Tasks;
 
 using GeoAPI.Geometries;
 
+using R5T.T0064;
+
 
 namespace R5T.Borgue.Database
 {
-    public interface IGeometryFactoryProvider
+    [ServiceDefinitionMarker]
+    public interface IGeometryFactoryProvider : IServiceDefinition
     {
         Task<IGeometryFactory> GetGeometryFactoryAsync();
     }
