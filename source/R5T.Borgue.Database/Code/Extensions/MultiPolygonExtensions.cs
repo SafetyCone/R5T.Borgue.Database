@@ -12,7 +12,7 @@ namespace R5T.Borgue.Database
 {
     public static class MultiPolygonExtensions
     {
-        public static GeoJsonMultiPolygonJsonString ToGeoJsonMultiPolygonJsonString(this MultiPolygon multiPolygon)
+        public static GeoJsonMultiPolygonJsonString ToGeoJsonMultiPolygonJsonString(this Geometry multiPolygon)
         {
             var geoJsonSerializer = GeoJsonSerializer.Create();
             using (var stringWriter = new StringWriter())
